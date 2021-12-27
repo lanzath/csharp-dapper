@@ -1,5 +1,6 @@
 ﻿using System;
 using Blog.Models;
+using Blog.Repositories;
 using Dapper.Contrib.Extensions;
 using Microsoft.Data.SqlClient;
 
@@ -10,80 +11,45 @@ namespace Blog
         private const string CONNECTION_STRING = @"Server=localhost,1433;Database=Blog;User ID=sa;Password=1q2w3e4r@#$;TrustServerCertificate=True";
         static void Main(string[] args)
         {
-            // ReadUsers();
-            // ReadUser();
-            // CreateUser();
-            // UpdateUser();
-            // DeleteUser();
+            // Compartilhamento de apenas uma instância de conexão para n instâncias de repositórios.
+            var connection = new SqlConnection(CONNECTION_STRING);
+            connection.Open();
+
+            ReadUsers(connection);
+            // ReadRoles(connection);
+            // ReadTags(connection);
+
+            connection.Close();
         }
 
-        public static void ReadUsers()
+        public static void ReadUsers(SqlConnection connection)
         {
-            using (var connection = new SqlConnection(CONNECTION_STRING))
+            var repository = new UserRepository(connection);
+            var items = repository.GetWithRoles();
+            foreach (var item in items)
             {
-                var users = connection.GetAll<User>();
-                foreach (var user in users)
+                Console.WriteLine(item.Name);
+                foreach (var role in item.Roles)
                 {
-                    Console.WriteLine($"Id: {user.Id} name: {user.Name} email: {user.Email}");
+                    Console.WriteLine($" - {role.Name}");
                 }
             }
         }
 
-        public static void ReadUser()
+        public static void ReadRoles(SqlConnection connection)
         {
-            using (var connection = new SqlConnection(CONNECTION_STRING))
-            {
-                var user = connection.Get<User>(1);
-
-                Console.WriteLine(user.Bio);
-            }
+            var repository = new Repository<Role>(connection);
+            var items = repository.Get();
+            foreach (var item in items)
+                Console.WriteLine(item.Name);
         }
 
-        public static void CreateUser()
+        public static void ReadTags(SqlConnection connection)
         {
-            var user = new User()
-            {
-                Name = "Jhonny Sins",
-                Bio = "O Careca da Brazzers | Pau para toda obra",
-                Email = "sins@brazzers.com",
-                Password = "$2y$10$XxReFmCyYHKwkJyZGSsDtuRqj2hgYt56pPCVIGSv6xgVJTiTivs8G",
-                Image = "https://i1.sndcdn.com/artworks-000562525653-v1wh6h-t500x500.jpg",
-                Slug = "careca-da-brazzers"
-            };
-
-            using (var connection = new SqlConnection(CONNECTION_STRING))
-            {
-                connection.Insert<User>(user); // Retorna quantidade de linhas afetadas
-            }
-        }
-
-        public static void UpdateUser()
-        {
-            var user = new User()
-            {
-                Id = 3,
-                Name = "Jhonny Sins",
-                Bio = "O Careca da Brazzers | Pau para toda obra",
-                Email = "jhonny.sins@brazzers.com",
-                Password = "$2y$10$XxReFmCyYHKwkJyZGSsDtuRqj2hgYt56pPCVIGSv6xgVJTiTivs8G",
-                Image = "https://i1.sndcdn.com/artworks-000562525653-v1wh6h-t500x500.jpg",
-                Slug = "careca-da-brazzers"
-            };
-
-            using (var connection = new SqlConnection(CONNECTION_STRING))
-            {
-                connection.Update<User>(user);
-            }
-        }
-
-        public static void DeleteUser()
-        {
-
-            using (var connection = new SqlConnection(CONNECTION_STRING))
-            {
-                var user = connection.Get<User>(2);
-                connection.Delete<User>(user);
-            }
+            var repository = new Repository<Tag>(connection);
+            var items = repository.Get();
+            foreach (var item in items)
+                Console.WriteLine(item.Name);
         }
     }
 }
